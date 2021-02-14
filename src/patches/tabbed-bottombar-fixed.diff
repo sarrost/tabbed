@@ -1,0 +1,89 @@
+diff -r f8f6841b3c1c config.def.h
+--- a/config.def.h	Mon Aug 09 11:59:13 2010 +0100
++++ b/config.def.h	Thu Nov 25 17:12:24 2010 +0100
+@@ -7,6 +7,7 @@
+ static const char *after       = ">";
+ static const int tabwidth      = 200;
+ static const Bool foreground   = False;
++static const Bool topbar       = False;
+ 
+ #define MODKEY ControlMask
+ static Key keys[] = { \
+diff -r f8f6841b3c1c tabbed.c
+--- a/tabbed.c	Mon Aug 09 11:59:13 2010 +0100
++++ b/tabbed.c	Thu Nov 25 17:12:24 2010 +0100
+@@ -217,6 +217,7 @@
+ void
+ configurenotify(const XEvent *e) {
+ 	const XConfigureEvent *ev = &e->xconfigure;
++	Client *c;
+ 
+ 	if(ev->window == win && (ev->width != ww || ev->height != wh)) {
+ 		ww = ev->width;
+@@ -225,6 +226,13 @@
+ 		dc.drawable = XCreatePixmap(dpy, root, ww, wh, DefaultDepth(dpy, screen));
+ 		if(sel)
+ 			resize(sel, ww, wh - bh);
++
++		/* move windows out of the way */
++		for(c = clients; c; c = c->next) {
++			if(c != sel)
++				XMoveWindow(dpy, c->win, 0, wh);
++		}
++
+ 		XSync(dpy, False);
+ 	}
+ }
+@@ -237,7 +245,7 @@
+ 
+ 	if((c = getclient(ev->window))) {
+ 		wc.x = 0;
+-		wc.y = bh;
++		wc.y = topbar ? bh : 0;
+ 		wc.width = ww;
+ 		wc.height = wh - bh;
+ 		wc.border_width = 0;
+@@ -286,7 +294,7 @@
+ 		dc.w = ww;
+ 		XFetchName(dpy, win, &name);
+ 		drawtext(name ? name : "", dc.norm);
+-		XCopyArea(dpy, dc.drawable, win, dc.gc, 0, 0, ww, bh, 0, 0);
++		XCopyArea(dpy, dc.drawable, win, dc.gc, 0, 0, ww, bh, 0, topbar ? 0 : wh - bh);
+ 		XSync(dpy, False);
+ 		return;
+ 	}
+@@ -323,7 +331,7 @@
+ 		dc.x += dc.w;
+ 		c->tabx = dc.x;
+ 	}
+-	XCopyArea(dpy, dc.drawable, win, dc.gc, 0, 0, ww, bh, 0, 0);
++	XCopyArea(dpy, dc.drawable, win, dc.gc, 0, 0, ww, bh, 0, topbar ? 0 : wh - bh);
+ 	XSync(dpy, False);
+ }
+ 
+@@ -387,6 +395,7 @@
+ 	}
+ 	resize(c, ww, wh - bh);
+ 	XRaiseWindow(dpy, c->win);
++	XMoveWindow(dpy, c->win, 0, topbar ? bh : 0);
+ 	sendxembed(c, XEMBED_FOCUS_IN, XEMBED_FOCUS_CURRENT, 0, 0);
+ 	sendxembed(c, XEMBED_WINDOW_ACTIVATE, 0, 0, 0);
+ 	XStoreName(dpy, win, c->name);
+@@ -569,7 +578,7 @@
+ 		XEvent e;
+ 
+ 		XWithdrawWindow(dpy, w, 0);
+-		XReparentWindow(dpy, w, win, 0, bh);
++		XReparentWindow(dpy, w, win, 0, topbar ? bh : 0);
+ 		XSelectInput(dpy, w, PropertyChangeMask|StructureNotifyMask|EnterWindowMask);
+ 		XSync(dpy, False);
+ 		for(i = 0; i < LENGTH(keys); i++) {
+@@ -639,7 +648,7 @@
+ 	XWindowChanges wc;
+ 
+ 	ce.x = 0;
+-	ce.y = bh;
++	ce.y = topbar ? bh : 0;
+ 	ce.width = wc.width = w;
+ 	ce.height = wc.height = h;
+ 	ce.type = ConfigureNotify;
