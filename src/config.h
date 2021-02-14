@@ -2,15 +2,15 @@
 
 /* appearance */
 static const char font[]        = "SauceCodePro Nerd Font Mono-12";
-static const char* normbgcolor  = "#222222";
+static const char* normbgcolor  = "#333333";
 static const char* normfgcolor  = "#cccccc";
-static const char* selbgcolor   = "#555555";
-static const char* selfgcolor   = "#ffffff";
+static const char* selbgcolor   = "#000000";
+static const char* selfgcolor   = "#00e897";
 static const char before[]      = "<";
 static const char after[]       = ">";
 static const int  tabwidth      = 200;
 static const Bool foreground    = True;
-static const Bool topbar       = False;
+static const Bool topbar        = False;
 
 /*
  * Where to place a new tab when it is opened. When npisrelative is True,
