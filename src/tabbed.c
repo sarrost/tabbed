@@ -111,6 +111,7 @@ static Bool gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void initfont(const char *fontstr);
 static Bool isprotodel(int c);
 static void keypress(const XEvent *e);
+static void keyrelease(const XEvent *e);
 static void killclient(const Arg *arg);
 static void manage(Window win);
 static void maprequest(const XEvent *e);
@@ -144,6 +145,7 @@ static void (*handler[LASTEvent]) (const XEvent *) = {
 	[Expose] = expose,
 	[FocusIn] = focusin,
 	[KeyPress] = keypress,
+	[KeyRelease] = keyrelease,
 	[MapRequest] = maprequest,
 	[PropertyNotify] = propertynotify,
 };
@@ -633,6 +635,23 @@ keypress(const XEvent *e) {
 }
 
 void
+keyrelease(const XEvent *e)
+{
+	const XKeyEvent *ev = &e->xkey;
+	unsigned int i;
+	KeySym keysym;
+
+	keysym = XkbKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0, 0);
+	for (i = 0; i < LENGTH(keyreleases); i++) {
+		if (keysym == keyreleases[i].keysym &&
+		    CLEANMASK(keyreleases[i].mod) == CLEANMASK(ev->state) &&
+		    keyreleases[i].func)
+			keyreleases[i].func(&(keyreleases[i].arg));
+	}
+}
+
+
+void
 killclient(const Arg *arg) {
 	XEvent ev;
 
@@ -677,6 +696,16 @@ manage(Window w) {
 							| modifiers[j], w,
 						 True, GrabModeAsync,
 						 GrabModeAsync);
+				}
+			}
+		}
+
+		for (i = 0; i < LENGTH(keyreleases); i++) {
+			if ((code = XKeysymToKeycode(dpy, keyreleases[i].keysym))) {
+				for (j = 0; j < LENGTH(modifiers); j++) {
+					XGrabKey(dpy, code, keyreleases[i].mod |
+					         modifiers[j], w, True,
+					         GrabModeAsync, GrabModeAsync);
 				}
 			}
 		}
@@ -993,9 +1022,10 @@ setup(void) {
 	dc.gc = XCreateGC(dpy, dc.drawable, 0, 0);
 
 	XMapRaised(dpy, win);
-	XSelectInput(dpy, win, SubstructureNotifyMask|FocusChangeMask|
-			ButtonPressMask|ExposureMask|KeyPressMask|PropertyChangeMask|
-			StructureNotifyMask|SubstructureRedirectMask);
+	XSelectInput(dpy, win, SubstructureNotifyMask | FocusChangeMask |
+			ButtonPressMask | ExposureMask|KeyPressMask |
+      KeyReleaseMask | PropertyChangeMask | StructureNotifyMask |
+			SubstructureRedirectMask);
 	xerrorxlib = XSetErrorHandler(xerror);
 
 	class_hint.res_name = wmname;

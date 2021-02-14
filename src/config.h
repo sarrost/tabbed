@@ -57,3 +57,7 @@ static Key keys[] = { \
 	{ 0,                            XK_F11,    fullscreen,     { 0 } },
 };
 
+static Key keyreleases[] = {
+	/* modifier             key          function     argument */
+	{ 0,                    XK_Shift_L,  NULL,   { 0 } },
+};
